@@ -13,19 +13,12 @@ public class UserService {
 		this.users = users;
 	}
 
-	/**
-	 * SAFE (ORM): repository methods generate parameterized queries.
-	 */
 	public Optional<UserView> loginSafeOrm(String username, String password) {
 		return users.findByUsername(username)
 				.filter(u -> u.getPassword().equals(password))
 				.map(u -> new UserView(u.getId(), u.getUsername()));
 	}
-
-	/**
-	 * SAFE (ORM): LIKE query via repository method (parameterized).
-	 * We intentionally return only minimal fields to avoid demo UI leaking secrets by design.
-	 */
+    
 	public List<UserView> searchSafeOrm(String q) {
 		return users.findByUsernameContainingIgnoreCase(q).stream()
 				.map(u -> new UserView(u.getId(), u.getUsername()))
