@@ -33,7 +33,7 @@
 	<div>
 		<h2 style="margin:0">Демо: SQL-инъекции и защита</h2>
 		<div class="small">
-			Здесь я показываю, что будет, если собрать SQL через конкатенацию строк, и как это чинится параметрами/ORM.
+			Демонстрация того, что происходит при конкатенации SQL, и как это устраняется параметризованными запросами и ORM.
 		</div>
 	</div>
 	<div class="row">
@@ -64,7 +64,7 @@
 		</form>
 
 		<div class="small" style="margin-top: 12px;">
-			Пример для обхода (вставить в <code>username</code>, пароль любой):<br/>
+			Пример для обхода (вставьте в <code>username</code>, пароль — любой):<br/>
 			<code>' OR '1'='1' --</code>
 		</div>
 	</div>
@@ -75,7 +75,7 @@
 			<span class="fail">Валидация:</span>
 			<span th:text="${validationError}">msg</span>
 		</div>
-		<div th:if="${loginMode == null}" class="small">Нажми одну из кнопок логина слева.</div>
+		<div th:if="${loginMode == null}" class="small">Нажмите одну из кнопок логина слева.</div>
 
 		<div th:if="${loginMode != null}">
 			<div class="small">
@@ -117,7 +117,7 @@
 		</form>
 
 		<div class="small" style="margin-top: 12px;">
-			Пример UNION‑payload (вставить в <code>q</code>):<br/>
+			Пример UNION‑payload (вставьте в <code>q</code>):<br/>
 			<code>%' UNION SELECT 1, username, password, secret_note FROM users --</code>
 		</div>
 	</div>
@@ -128,7 +128,7 @@
 			<span class="fail">Валидация:</span>
 			<span th:text="${validationError}">msg</span>
 		</div>
-		<div th:if="${searchMode == null}" class="small">Нажми одну из кнопок поиска слева.</div>
+		<div th:if="${searchMode == null}" class="small">Нажмите одну из кнопок поиска слева.</div>
 
 		<div th:if="${searchMode != null}">
 			<div class="small">
