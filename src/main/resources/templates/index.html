@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+	<title>SQLi PoC: уязвимо vs безопасно</title>
+	<style>
+		body { font-family: system-ui, Arial, sans-serif; margin: 32px; max-width: 1080px; }
+		.top { display:flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+		.badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid #ddd; background: #fafafa; }
+		.grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; align-items: start; }
+		.card { border: 1px solid #ddd; border-radius: 14px; padding: 16px; background: white; }
+		.card h3 { margin: 4px 0 10px; }
+		.small { color: #555; font-size: 13px; line-height: 1.4; }
+		label { display: block; font-weight: 650; margin: 12px 0 6px; }
+		input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 10px; }
+		.row { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+		button, a.btn { padding: 10px 14px; border: 0; border-radius: 10px; background: #1f6feb; color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+		a.btn.secondary, button.secondary { background: #2da44e; }
+		a.btn.ghost { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
+		hr { border: 0; border-top: 1px solid #eee; margin: 18px 0; }
+		pre { background: #0b1020; color: #dce7ff; padding: 12px; border-radius: 12px; overflow: auto; }
+		code { background: #f4f4f4; padding: 2px 6px; border-radius: 7px; }
+		table { width:100%; border-collapse: collapse; }
+		th, td { border-bottom: 1px solid #eee; padding: 8px 6px; text-align: left; vertical-align: top; }
+		th { font-size: 12px; color: #444; text-transform: uppercase; letter-spacing: .03em; }
+		.ok { color: #1a7f37; font-weight: 700; }
+		.fail { color: #cf222e; font-weight: 700; }
+	</style>
+</head>
+<body>
+<div class="top">
+	<div>
+		<h2 style="margin:0">PoC: SQL-инъекция в логине и поиске пользователей</h2>
+		<div class="small">
+			Цель: показать <b>как ломается</b> при конкатенации SQL и <b>почему не ломается</b> при параметризации.
+		</div>
+	</div>
+	<div class="row">
+		<span class="badge">Демо‑стенд</span>
+	</div>
+</div>
+
+<hr/>
+
+<div class="grid">
+	<div class="card">
+		<h3>1) Логин (обход аутентификации)</h3>
+		<div class="small">
+			<b>Unsafe</b>: SQL строится строковой конкатенацией → можно вставить “кусок SQL” в поле username/password.<br/>
+			<b>Safe</b>: используются параметры (<code>?</code>) → ввод становится данными, а не частью SQL.
+		</div>
+
+		<form th:action="@{/login/unsafe}" method="post" style="margin-top: 12px;">
+			<label>Username</label>
+			<input name="username" th:value="${loginUsername}"/>
+			<label>Password</label>
+			<input name="password" th:value="${loginPassword}"/>
+			<div class="row" style="margin-top: 12px;">
+				<button type="submit">Login (unsafe)</button>
+				<button type="submit" class="secondary" th:formaction="@{/login/safe}">Login (safe)</button>
+				<button type="submit" class="ghost" th:formaction="@{/login/safe-orm}">Login (safe ORM)</button>
+			</div>
+		</form>
+
+		<div class="small" style="margin-top: 12px;">
+			<b>Payload для обхода</b> (вставить в <code>username</code>, пароль любой):<br/>
+			<code>' OR '1'='1' --</code>
+		</div>
+	</div>
+
+	<div class="card">
+		<h3>Результат логина</h3>
+		<div th:if="${validationError != null}" class="small" style="margin-bottom:10px">
+			<span class="fail">Ошибка валидации:</span>
+			<span th:text="${validationError}">msg</span>
+		</div>
+		<div th:if="${loginMode == null}" class="small">Нажми одну из кнопок логина слева.</div>
+
+		<div th:if="${loginMode != null}">
+			<div class="small">
+				Режим:
+				<b th:text="${loginMode}">mode</b>
+				—
+				<span th:if="${loginOk}" class="ok">OK</span>
+				<span th:unless="${loginOk}" class="fail">FAIL</span>
+			</div>
+			<div style="height:10px"></div>
+			<div class="small"><b>SQL, который реально выполняется</b>:</div>
+			<pre th:text="${loginSql}">SQL</pre>
+
+			<div class="small" th:if="${loginOk}">
+				<b>Кто “залогинился”</b>:
+				<code th:text="${loginResultUser.username()}">user</code>
+			</div>
+		</div>
+	</div>
+</div>
+
+<hr/>
+
+<div class="grid">
+	<div class="card">
+		<h3>2) Поиск (UNION‑инъекция и утечка данных)</h3>
+		<div class="small">
+			Демонстрация: в unsafe‑поиске можно подмешать <code>UNION SELECT ...</code> и получить поля, которые “не должны” показываться.
+		</div>
+
+		<form th:action="@{/search/unsafe}" method="get" style="margin-top: 12px;">
+			<label>Search query (q)</label>
+			<input name="q" th:value="${searchQ}"/>
+			<div class="row" style="margin-top: 12px;">
+				<button type="submit">Search (unsafe)</button>
+				<button type="submit" class="secondary" th:formaction="@{/search/safe}">Search (safe)</button>
+				<button type="submit" class="ghost" th:formaction="@{/search/safe-orm}">Search (safe ORM)</button>
+			</div>
+		</form>
+
+		<div class="small" style="margin-top: 12px;">
+			<b>Payload (UNION)</b> вставить в <code>q</code>:<br/>
+			<code>%' UNION SELECT 1, username, password, secret_note FROM users --</code>
+		</div>
+	</div>
+
+	<div class="card">
+		<h3>Результат поиска</h3>
+		<div th:if="${validationError != null}" class="small" style="margin-bottom:10px">
+			<span class="fail">Ошибка валидации:</span>
+			<span th:text="${validationError}">msg</span>
+		</div>
+		<div th:if="${searchMode == null}" class="small">Нажми одну из кнопок поиска слева.</div>
+
+		<div th:if="${searchMode != null}">
+			<div class="small">
+				Режим: <b th:text="${searchMode}">mode</b>
+			</div>
+			<div style="height:10px"></div>
+			<div class="small"><b>SQL, который реально выполняется</b>:</div>
+			<pre th:text="${searchSql}">SQL</pre>
+
+			<table>
+				<thead>
+				<tr>
+					<th>id</th>
+					<th>username</th>
+					<th>password</th>
+					<th>secret_note</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr th:each="r : ${searchRows}">
+					<td th:text="${r.id()}">1</td>
+					<td th:text="${r.username()}">u</td>
+					<td th:text="${r.password()}">p</td>
+					<td th:text="${r.secretNote()}">s</td>
+				</tr>
+				<tr th:if="${#lists.isEmpty(searchRows)}">
+					<td colspan="4" class="small">Нет результатов.</td>
+				</tr>
+				</tbody>
+			</table>
+
+			<div th:if="${searchMode == 'safe(orm)'}" style="margin-top: 12px;">
+				<div class="small"><b>Результаты safe ORM (минимальный вывод)</b>:</div>
+				<table>
+					<thead>
+					<tr>
+						<th>id</th>
+						<th>username</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr th:each="r : ${searchRowsSafeOrm}">
+						<td th:text="${r.id()}">1</td>
+						<td th:text="${r.username()}">u</td>
+					</tr>
+					<tr th:if="${#lists.isEmpty(searchRowsSafeOrm)}">
+						<td colspan="2" class="small">Нет результатов.</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>
+
