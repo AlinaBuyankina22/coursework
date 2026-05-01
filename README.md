@@ -77,11 +77,10 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 ## Как это связано с планом
 
 По идее, в работе нужно показать “до/после”, поэтому сделано так:
-
 - параметризованные запросы: `UserJdbcDao` (safe Prepared)
 - ORM: `UserRepository` + `UserService` (safe ORM)
 - валидация: ограничения в `DemoController` (длина, и для `q` white‑list)
 
-Наименьшие привилегии для БД: в реальных проектах это важно, но в учебном PoC на H2 я это отдельно не настраивал.
+
 
 
