@@ -20,15 +20,15 @@
 
 ## Как запустить (IntelliJ IDEA)
 
-1) Открой проект папкой:
+1) Откройте проект папкой:
 
 `c:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo`
 
-2) Проверь JDK (Project SDK) = **21**.
+2) Проверьте JDK (Project SDK) = **21**.
 
-3) Дождись, пока Maven подтянет зависимости.
+3) Дождитесь, пока Maven подтянет зависимости.
 
-4) Запусти `ru.kurs.sqlidemo.SqliDemoApplication` (зелёная кнопка Run).
+4) Запустите `ru.kurs.sqlidemo.SqliDemoApplication` (зелёная кнопка Run).
 
 ## Как запустить (PowerShell)
 
