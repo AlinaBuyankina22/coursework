@@ -13,12 +13,14 @@ public class UserService {
 		this.users = users;
 	}
 
+	
 	public Optional<UserView> loginSafeOrm(String username, String password) {
 		return users.findByUsername(username)
 				.filter(u -> u.getPassword().equals(password))
 				.map(u -> new UserView(u.getId(), u.getUsername()));
 	}
-    
+
+	
 	public List<UserView> searchSafeOrm(String q) {
 		return users.findByUsernameContainingIgnoreCase(q).stream()
 				.map(u -> new UserView(u.getId(), u.getUsername()))

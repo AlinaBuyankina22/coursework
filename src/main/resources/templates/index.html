@@ -31,13 +31,13 @@
 <body>
 <div class="top">
 	<div>
-		<h2 style="margin:0">PoC: SQL-инъекция в логине и поиске пользователей</h2>
+		<h2 style="margin:0">Демо: SQL-инъекции и защита</h2>
 		<div class="small">
-			Цель: показать <b>как ломается</b> при конкатенации SQL и <b>почему не ломается</b> при параметризации.
+			Здесь я показываю, что будет, если собрать SQL через конкатенацию строк, и как это чинится параметрами/ORM.
 		</div>
 	</div>
 	<div class="row">
-		<span class="badge">Демо‑стенд</span>
+		<span class="badge">Учебный пример</span>
 	</div>
 </div>
 
@@ -47,8 +47,8 @@
 	<div class="card">
 		<h3>1) Логин (обход аутентификации)</h3>
 		<div class="small">
-			<b>Unsafe</b>: SQL строится строковой конкатенацией → можно вставить “кусок SQL” в поле username/password.<br/>
-			<b>Safe</b>: используются параметры (<code>?</code>) → ввод становится данными, а не частью SQL.
+			<b>unsafe</b>: SQL собирается строкой → можно “подменить” условие в запросе.<br/>
+			<b>safe</b>: параметры (<code>?</code>) или ORM → ввод не меняет SQL.
 		</div>
 
 		<form th:action="@{/login/unsafe}" method="post" style="margin-top: 12px;">
@@ -64,7 +64,7 @@
 		</form>
 
 		<div class="small" style="margin-top: 12px;">
-			<b>Payload для обхода</b> (вставить в <code>username</code>, пароль любой):<br/>
+			Пример для обхода (вставить в <code>username</code>, пароль любой):<br/>
 			<code>' OR '1'='1' --</code>
 		</div>
 	</div>
@@ -72,7 +72,7 @@
 	<div class="card">
 		<h3>Результат логина</h3>
 		<div th:if="${validationError != null}" class="small" style="margin-bottom:10px">
-			<span class="fail">Ошибка валидации:</span>
+			<span class="fail">Валидация:</span>
 			<span th:text="${validationError}">msg</span>
 		</div>
 		<div th:if="${loginMode == null}" class="small">Нажми одну из кнопок логина слева.</div>
@@ -86,11 +86,11 @@
 				<span th:unless="${loginOk}" class="fail">FAIL</span>
 			</div>
 			<div style="height:10px"></div>
-			<div class="small"><b>SQL, который реально выполняется</b>:</div>
+			<div class="small"><b>SQL / описание запроса</b>:</div>
 			<pre th:text="${loginSql}">SQL</pre>
 
 			<div class="small" th:if="${loginOk}">
-				<b>Кто “залогинился”</b>:
+				<b>Пользователь</b>:
 				<code th:text="${loginResultUser.username()}">user</code>
 			</div>
 		</div>
@@ -103,7 +103,7 @@
 	<div class="card">
 		<h3>2) Поиск (UNION‑инъекция и утечка данных)</h3>
 		<div class="small">
-			Демонстрация: в unsafe‑поиске можно подмешать <code>UNION SELECT ...</code> и получить поля, которые “не должны” показываться.
+			Если поиск сделан небезопасно, можно добавить <code>UNION SELECT ...</code> и вытащить лишние поля (пароль/секретную заметку).
 		</div>
 
 		<form th:action="@{/search/unsafe}" method="get" style="margin-top: 12px;">
@@ -117,7 +117,7 @@
 		</form>
 
 		<div class="small" style="margin-top: 12px;">
-			<b>Payload (UNION)</b> вставить в <code>q</code>:<br/>
+			Пример UNION‑payload (вставить в <code>q</code>):<br/>
 			<code>%' UNION SELECT 1, username, password, secret_note FROM users --</code>
 		</div>
 	</div>
@@ -125,7 +125,7 @@
 	<div class="card">
 		<h3>Результат поиска</h3>
 		<div th:if="${validationError != null}" class="small" style="margin-bottom:10px">
-			<span class="fail">Ошибка валидации:</span>
+			<span class="fail">Валидация:</span>
 			<span th:text="${validationError}">msg</span>
 		</div>
 		<div th:if="${searchMode == null}" class="small">Нажми одну из кнопок поиска слева.</div>
@@ -135,7 +135,7 @@
 				Режим: <b th:text="${searchMode}">mode</b>
 			</div>
 			<div style="height:10px"></div>
-			<div class="small"><b>SQL, который реально выполняется</b>:</div>
+			<div class="small"><b>SQL / описание запроса</b>:</div>
 			<pre th:text="${searchSql}">SQL</pre>
 
 			<table>
@@ -161,7 +161,7 @@
 			</table>
 
 			<div th:if="${searchMode == 'safe(orm)'}" style="margin-top: 12px;">
-				<div class="small"><b>Результаты safe ORM (минимальный вывод)</b>:</div>
+				<div class="small"><b>safe ORM (вывожу только id и username)</b>:</div>
 				<table>
 					<thead>
 					<tr>

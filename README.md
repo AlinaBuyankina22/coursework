@@ -1,20 +1,12 @@
-# SQLi demo (PoC): уязвимо vs безопасно
+# SQLi demo (курсовая)
 
-Spring Boot PoC для демонстрации SQL‑инъекции и её устранения.
+Небольшое веб‑приложение на Spring Boot, где можно руками проверить SQL‑инъекции и посмотреть, как они “лечатся”.
 
-Что показано:
+Что есть в приложении:
 
-- **Логин (обход аутентификации)**:
-  - unsafe: конкатенация SQL
-  - safe (Prepared): параметризованный запрос (PreparedStatement/JdbcTemplate)
-  - safe (ORM): доступ через Spring Data JPA (репозиторий), без конкатенации SQL
-- **Поиск (UNION‑SQLi + утечка данных)**:
-  - unsafe: `LIKE '%<input>%'` через конкатенацию
-  - safe (Prepared): `LIKE ?` через параметр
-  - safe (ORM): `findByUsernameContainingIgnoreCase(q)` (параметризовано)
-- **Валидация ввода (Defense in Depth)**:
-  - ограничения по длине
-  - white‑list по символам для `q` (буквы/цифры/пробел/_/-)
+- логин (unsafe / safe Prepared / safe ORM)
+- поиск пользователей (unsafe / safe Prepared / safe ORM)
+- простая валидация ввода (не вместо параметров, а как доп. слой)
 
 ## Стек
 
@@ -68,8 +60,8 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 
 Ожидаемо:
 
-- **Login (unsafe)**: успешно (подставится первый попавшийся пользователь)
-- **Login (safe)**: неуспешно
+- Login (unsafe): может залогинить без нормального пароля
+- Login (safe / safe ORM): не должен залогинить
 
 ### 2) UNION‑SQLi в поиске (unsafe)
 
@@ -79,20 +71,17 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 
 Ожидаемо:
 
-- **Search (unsafe)**: вернёт строки с `password` и `secret_note` (утечка)
-- **Search (safe Prepared / safe ORM)**: UNION не сработает (ввод интерпретируется как данные)
+- Search (unsafe): можно получить `password` и `secret_note`
+- Search (safe Prepared / safe ORM): UNION не сработает
 
-## Как это ложится на план курсовой
+## Как это связано с планом
 
-- **1.3 Методы защиты**:
-  - параметризованные запросы → `UserJdbcDao.loginSafePrepared()` / `UserJdbcDao.searchSafe()`
-  - ORM → `UserService` + `UserRepository` (Spring Data JPA)
-  - валидация → аннотации `@Size/@Pattern/@NotBlank` в `DemoController`
-  - наименьшие привилегии → рекомендуется как конфигурационная мера (для H2 PoC ограниченно демонстрируемо)
+По идее, в работе нужно показать “до/после”, поэтому сделано так:
 
-- **Глава 3 (реализация и тестирование)**:
-  - 3.2 безопасное взаимодействие с БД → сравнение `/login/unsafe` vs `/login/safe` vs `/login/safe-orm`; `/search/unsafe` vs `/search/safe` vs `/search/safe-orm`
-  - 3.3 PenTest → ввод payload’ов из раздела выше и проверка ожидаемого результата
-  - 3.4 Эффективность → unsafe ломается (bypass/UNION), safe‑варианты не ломаются
+- параметризованные запросы: `UserJdbcDao` (safe Prepared)
+- ORM: `UserRepository` + `UserService` (safe ORM)
+- валидация: ограничения в `DemoController` (длина, и для `q` white‑list)
+
+Наименьшие привилегии для БД: в реальных проектах это важно, но в учебном PoC на H2 я это отдельно не настраивал.
 
 
