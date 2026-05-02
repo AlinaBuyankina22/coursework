@@ -5,7 +5,10 @@ function Test-JavaAvailable {
 }
 
 function Get-JavaMajorVersion {
-	$out = (& java -version 2>&1 | Out-String)
+	# `java -version` пишет в stderr. В Windows PowerShell при $ErrorActionPreference=Stop
+	# stderr от нативных команд часто превращается в ErrorRecord и рвёт выполнение.
+	# Поэтому берём вывод через cmd.
+	$out = (cmd /c "java -version 2>&1") -join "`n"
 	if ($out -match 'version "1\.(\d+)') { return [int]$Matches[1] } # 1.8 -> 8
 	if ($out -match 'version "(\d+)') { return [int]$Matches[1] }
 	return $null
@@ -66,7 +69,7 @@ $env:JAVA_HOME = $jh
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 Write-Host "JAVA_HOME=$env:JAVA_HOME"
-Write-Host (& java -version 2>&1 | Out-String)
+Write-Host ((cmd /c "java -version 2>&1") -join "`n")
 
 Set-Location $PSScriptRoot
 Write-Host "Запуск: .\mvnw.cmd spring-boot:run"
