@@ -18,6 +18,66 @@
 - Spring Data JPA + JDBC
 - Bean Validation (jakarta.validation)
 
+## Java: установка и проверка (Windows)
+
+Нужен **JDK** (не только JRE). Для этого проекта удобнее **JDK 21** (в `pom.xml` указано `java.version=21`).
+
+### Самый простой запуск из PowerShell (без ручного JAVA_HOME)
+
+В корне проекта есть `run.ps1`: он попытается поставить **Temurin JDK 21** через `winget` (если Java не найдена), сам выставит `JAVA_HOME` **только для текущего окна PowerShell** и запустит приложение.
+
+Две команды:
+
+```powershell
+cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+Примечания:
+
+- Если `winget install` попросит права администратора — откройте PowerShell **от имени администратора** и повторите.
+- Если `winget` недоступен (редко, но бывает) — используйте ручную установку JDK ниже.
+
+### Установка
+
+1) Скачайте и установите JDK 21, например **Eclipse Temurin** (Adoptium):  
+   https://adoptium.net/temurin/releases/?version=21
+
+2) Запомните папку установки. Обычно это что-то вроде:
+   - `C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot\`
+   - или `C:\Program Files\Java\jdk-21\`
+
+### Переменные среды (`JAVA_HOME` и `Path`)
+
+Если при запуске `mvnw.cmd` появляется ошибка вида **“JAVA_HOME is not defined correctly”**, настройте переменные:
+
+1) **Параметры Windows → Система → О системе → Дополнительные параметры системы → Переменные среды**
+2) Создайте (или исправьте) системную переменную:
+   - **Имя**: `JAVA_HOME`
+   - **Значение**: путь к JDK **без** `\bin` (например `C:\Program Files\Eclipse Adoptium\jdk-21.0.7.6-hotspot`)
+3) В переменной **Path** добавьте строку:
+   - `%JAVA_HOME%\bin`
+
+Закройте и снова откройте PowerShell / IDE после изменений.
+
+### Проверка в PowerShell
+
+```powershell
+java -version
+javac -version
+echo $env:JAVA_HOME
+where.exe java
+```
+
+Ожидаемо: `java -version` показывает **21.x**, `javac -version` тоже доступен, `where.exe java` указывает на файл внутри `%JAVA_HOME%\bin`.
+
+Если `java` есть, а `JAVA_HOME` пустой — Maven Wrapper всё равно может ругаться: тогда либо задайте `JAVA_HOME`, либо временно (только для текущего окна):
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.7.6-hotspot"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+```
+
 ## Как запустить (IntelliJ IDEA)
 
 1) Откройте проект папкой:
@@ -31,6 +91,8 @@
 4) Запустите `ru.kurs.sqlidemo.SqliDemoApplication` (зелёная кнопка Run).
 
 ## Как запустить (PowerShell)
+
+Если Java уже установлена и `JAVA_HOME` настроен корректно:
 
 ```powershell
 cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
@@ -54,7 +116,7 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 
 ### 1) Login bypass (unsafe)
 
-Вставить в поле **Username**, пароль можно любой:
+Вставьте в поле **Username**, пароль можно любой:
 
 - **`' OR '1'='1' --`**
 
@@ -65,7 +127,7 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 
 ### 2) UNION‑SQLi в поиске (unsafe)
 
-Вставить в поле **Search query (q)**:
+Вставьте в поле **Search query (q)**:
 
 - **`%' UNION SELECT 1, username, password, secret_note FROM users --`**
 
@@ -81,5 +143,7 @@ cd C:\Users\alian\Desktop\kurs\sqli-demo\sqli-demo
 - параметризованные запросы: `UserJdbcDao` (safe Prepared)
 - ORM: `UserRepository` + `UserService` (safe ORM)
 - валидация: ограничения в `DemoController` (длина, и для `q` white‑list)
+
+Наименьшие привилегии для БД: в реальных проектах это важно, но в учебном PoC на H2 я это отдельно не настраивал.
 
 
