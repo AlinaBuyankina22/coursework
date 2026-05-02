@@ -5,9 +5,6 @@ function Test-JavaAvailable {
 }
 
 function Get-JavaMajorVersion {
-	# `java -version` пишет в stderr. В Windows PowerShell при $ErrorActionPreference=Stop
-	# stderr от нативных команд часто превращается в ErrorRecord и рвёт выполнение.
-	# Поэтому берём вывод через cmd.
 	$out = (cmd /c "java -version 2>&1") -join "`n"
 	if ($out -match 'version "1\.(\d+)') { return [int]$Matches[1] } # 1.8 -> 8
 	if ($out -match 'version "(\d+)') { return [int]$Matches[1] }
